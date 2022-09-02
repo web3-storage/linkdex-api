@@ -1,0 +1,27 @@
+{
+  "name": "@linkdex-api/services",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "ava",
+    "test:debug": "DEBUG=testcontainers* ava"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.161.0",
+    "@ipld/car": "^4.1.5",
+    "aws-sdk": "^2.1206.0",
+    "linkdex": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.102"
+  },
+  "ava": {
+    "extensions": {
+      "ts": "module",
+      "js": true
+    },
+    "nodeArguments": [
+      "--loader=ts-node/esm"
+    ]
+  }
+}
