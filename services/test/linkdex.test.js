@@ -8,8 +8,12 @@ import { sha256 as hasher } from 'multiformats/hashes/sha2'
 import { S3Client, CreateBucketCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getLinkdexReport } from '../functions/linkdex.js'
 
+test.before(async t => {
+  t.context.s3 = await createS3()
+})
+
 test('complete CAR', async t => {
-  const s3 = await createS3()
+  const { s3 } = t.context
   const bucket = await createBucket(s3)
   const block1 = await encode({ value: pb.prepare({ Data: 'one' }), codec: pb, hasher })
   const block2 = await encode({ value: pb.prepare({ Data: 'two' }), codec: pb, hasher })
@@ -33,7 +37,7 @@ test('complete CAR', async t => {
 })
 
 test('complete across 2 CARs', async t => {
-  const s3 = await createS3()
+  const { s3 } = t.context
   const bucket = await createBucket(s3)
   const block1 = await encode({ value: pb.prepare({ Data: 'one' }), codec: pb, hasher })
   const block2 = await encode({ value: pb.prepare({ Data: 'two' }), codec: pb, hasher })
@@ -62,7 +66,7 @@ test('complete across 2 CARs', async t => {
 })
 
 test('incomplete across 2 CARs', async t => {
-  const s3 = await createS3()
+  const { s3 } = t.context
   const bucket = await createBucket(s3)
   const block1 = await encode({ value: pb.prepare({ Data: 'one' }), codec: pb, hasher })
   const block2 = await encode({ value: pb.prepare({ Data: 'two' }), codec: pb, hasher })
