@@ -1,4 +1,5 @@
 import test from 'ava'
+import { Blob } from 'buffer'
 import * as pb from '@ipld/dag-pb'
 import { customAlphabet } from 'nanoid'
 import { encode } from 'multiformats/block'
@@ -11,6 +12,32 @@ import { getLinkdexReport } from '../functions/linkdex.js'
 test.before(async t => {
   t.context.s3 = await createS3()
 })
+
+test('ignores non CAR files', async t => {
+  const { s3 } = t.context
+  const bucket = await createBucket(s3)
+  const block1 = await encode({ value: pb.prepare({ Data: 'one' }), codec: pb, hasher })
+  const block2 = await encode({ value: pb.prepare({ Data: 'two' }), codec: pb, hasher })
+  const parent = await encode({ value: pb.prepare({ Links: [block1.cid, block2.cid] }), codec: pb, hasher })
+  const car = CarBufferWriter.createWriter(Buffer.alloc(1000), { roots: [parent.cid]})
+  car.write(parent)
+  car.write(block1)
+  car.write(block2)
+  const key = `raw/${parent.cid.toString()}/user/complete.car`
+  await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: car.close() }))
+  await s3.send(new PutObjectCommand({ Bucket: bucket, Key: `${key}.idx`, Body: 'i am an index' }))
+  const res = await getLinkdexReport(key, bucket, s3)
+  t.is(res.statusCode, 200)
+  const report = JSON.parse(res.body)
+  t.deepEqual(report, {
+    cars: [ key ],
+    structure: 'Complete',
+    blocksIndexed: 3,
+    blocksUnique: 3,
+    blocksUndecodeable: 0
+  })
+})
+
 
 test('complete CAR', async t => {
   const { s3 } = t.context

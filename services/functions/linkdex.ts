@@ -55,7 +55,7 @@ async function listSiblings (key: string, bucket: string, s3: S3Client): Promise
   for await (const data of paginateListObjectsV2({ client: s3 }, { Bucket: bucket, Prefix: prefix })) {
     const batch = data.Contents ?? []
     for (const item of batch) {
-      if (item.Key !== undefined) {
+      if (item.Key !== undefined && item.Key.endsWith('.car')) {
         files.push(item.Key)
       }
     }
