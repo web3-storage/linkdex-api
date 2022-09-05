@@ -4,7 +4,7 @@ A lambda and REST api to check DAG completeness across one or more CARs
 
 Give it an s3 key to a CAR you just upladed as `key`, and it tells you if we have a complete DAG for the root CID.
 
-We check the key provided exists first. If you know the path and hash of CAR then you are probably dotStoarage.
+We check if the key provided exists first. If you know the path and hash of CAR then you are probably dotStorage.
 
 ```console
 curl https://linkdex.api?key=raw/bafy/userid-ish/1.car

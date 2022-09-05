@@ -43,8 +43,8 @@ async function keyExists (key: string, bucket: string, s3: S3Client) {
   try {
     const res = await s3.send(new HeadObjectCommand({ Key: key, Bucket: bucket }))
     return true
-  } catch (err) {
-    false
+  } catch {
+    return false
   }
 }
 
@@ -75,7 +75,7 @@ function response (body: any, opts: APIGatewayProxyStructuredResultV2 = {}): API
   return {
     ...opts,
     statusCode: opts.statusCode ?? 200,
-    headers: Object.assign({ "Content-Type": "application/json" }, opts.headers),
+    headers: Object.assign({ 'Content-Type': 'application/json' }, opts.headers),
     body: JSON.stringify(body)
   }
 }
