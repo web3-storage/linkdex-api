@@ -2,6 +2,8 @@ import { APIGatewayProxyHandlerV2, APIGatewayProxyStructuredResultV2 } from "aws
 import { S3Client, GetObjectCommand, HeadObjectCommand, paginateListObjectsV2 } from "@aws-sdk/client-s3"
 import { CarBlockIterator } from '@ipld/car'
 import { LinkIndexer } from 'linkdex'
+import pRetry from 'p-retry'
+import pMap from 'p-map'
 
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   const key = event.queryStringParameters?.key ?? ''
@@ -26,17 +28,20 @@ export async function getLinkdexReport (key: string, bucket: string, s3: S3Clien
   }
   const carKeys = await listSiblings(key, bucket, s3)
   const index = new LinkIndexer()
-  for (const carKey of carKeys) {
-    const carStream = await getObjectStream(carKey, bucket, s3)
-    const carBlocks = await CarBlockIterator.fromIterable(carStream)
-    for await (const block of carBlocks) {
-      index.decodeAndIndex(block)
-    }
-  }
+  const indexer = indexCar.bind(null, bucket, s3, index)
+  await pMap(carKeys, indexer, { concurrency: 10 })
   return response({
     cars: carKeys,
     ...index.report()
   })
+}
+
+async function indexCar (bucket: string, s3: S3Client, index: LinkIndexer, carKey: string) {
+  const carStream = await getObjectStream(carKey, bucket, s3)
+  const carBlocks = await CarBlockIterator.fromIterable(carStream)
+  for await (const block of carBlocks) {
+    index.decodeAndIndex(block)
+  }
 }
 
 async function keyExists (key: string, bucket: string, s3: S3Client) {
@@ -64,10 +69,10 @@ async function listSiblings (key: string, bucket: string, s3: S3Client): Promise
 }
 
 async function getObjectStream (key: string, bucket: string, s3: S3Client) {
-  const res = await s3.send(new GetObjectCommand({
+  const res = await pRetry(() => s3.send(new GetObjectCommand({
     Key: key,
     Bucket: bucket,
-  }))
+  })), { retries: 5 })
   return res.Body
 }
 
