@@ -34,5 +34,8 @@
     "nodeArguments": [
       "--loader=ts-node/esm"
     ]
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.163.0"
   }
 }
