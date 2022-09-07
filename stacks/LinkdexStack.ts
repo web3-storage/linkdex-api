@@ -29,6 +29,7 @@ export function LinkdexStack({ app, stack }: StackContext) {
     }
   })
   stack.addOutputs({
-    ApiEndpoint: api.url
+    ApiEndpoint: api.url,
+    CustomDomain: `https://${domain}`
   })
 }
