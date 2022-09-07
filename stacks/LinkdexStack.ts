@@ -1,8 +1,12 @@
-import { StackContext, Api, Bucket } from "@serverless-stack/resources";
+import { StackContext, Api, Bucket } from "@serverless-stack/resources"
+import { aws_s3 as s3 } from 'aws-cdk-lib'
 
 export function LinkdexStack({ app,stack }: StackContext) {
-
-  const bucket = new Bucket(stack, 'cars')
+  // either import an existing bucket or create a new one for dev.
+  // see: https://docs.sst.dev/advanced/importing-resources
+  const bucket = (process.env.BUCKET_NAME)
+    ? new Bucket(stack, 'existing-cars', { cdk: { bucket: s3.Bucket.fromBucketName(stack, 'imported-cars', process.env.BUCKET_NAME) }})
+    : new Bucket(stack, 'cars')
 
   const api = new Api(stack, "api", {
     defaults: {
