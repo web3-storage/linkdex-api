@@ -9,7 +9,7 @@ export function LinkdexStack({ app, stack }: StackContext) {
     : new Bucket(stack, 'cars')
 
   const zone = 'linkdex.dag.haus'
-  const domain = app.stage === 'prod' ? zone : `${app.stage}.zone`
+  const domain = app.stage === 'prod' ? zone : `${app.stage}.${zone}`
 
   const api = new Api(stack, "api", {
     customDomain: { 
