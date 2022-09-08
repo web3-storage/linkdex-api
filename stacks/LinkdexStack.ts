@@ -4,18 +4,15 @@ import { aws_s3 as s3 } from 'aws-cdk-lib'
 export function LinkdexStack({ app, stack }: StackContext) {
   // either import an existing bucket or create a new one for dev.
   // see: https://docs.sst.dev/advanced/importing-resources
-  const bucket = (process.env.BUCKET_NAME)
-    ? new Bucket(stack, 'existing-cars', { cdk: { bucket: s3.Bucket.fromBucketName(stack, 'imported-cars', process.env.BUCKET_NAME) }})
+  const bucketName = process.env.BUCKET_NAME
+  const bucket = (bucketName)
+    ? new Bucket(stack, 'existing-cars', { cdk: { bucket: s3.Bucket.fromBucketName(stack, 'imported-cars', bucketName) }})
     : new Bucket(stack, 'cars')
 
-  const zone = 'linkdex.dag.haus'
-  const domain = app.stage === 'prod' ? zone : `${app.stage}.${zone}`
-
+  const customDomain = getCustomDomain(app.stage, process.env.HOSTED_ZONE)
+  
   const api = new Api(stack, "api", {
-    customDomain: { 
-      domainName: domain,
-      hostedZone: zone
-    },
+    customDomain,
     defaults: {
       function: {
         permissions: [bucket],
@@ -28,8 +25,17 @@ export function LinkdexStack({ app, stack }: StackContext) {
       "GET /": "functions/linkdex.handler",
     }
   })
+
   stack.addOutputs({
     ApiEndpoint: api.url,
-    CustomDomain: `https://${domain}`
+    CustomDomain: customDomain ? `https://${customDomain.domainName}` : 'Set HOSTED_ZONE in env to deploy to a custom domain'
   })
+}
+
+function getCustomDomain (stage: string, hostedZone?: string) {
+  if (!hostedZone) {
+    return undefined
+  }
+  const domainName = stage === 'prod' ? hostedZone : `${stage}.${hostedZone}`
+  return { domainName, hostedZone }
 }
