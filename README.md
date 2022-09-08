@@ -15,8 +15,8 @@ curl https://linkdex.api?key=raw/bafy/userid-ish/1.car
   ],
   structure: 'Partial',
   blocksIndexed: 4,
-  blocksUnique: 3,
-  blocksUndecodeable: 0
+  uniqueCids: 3,
+  undecodeable: 0
 ```
 
 Uses [`linkdex`](https://github.com/web3-storage/linkdex) to figure out if the dag the DAG structure
@@ -67,8 +67,8 @@ curl -sS 'https://???.execute-api.us-east-2.amazonaws.com?key=raw/bafkreia223gzz
   ],
   "structure": "Complete",
   "blocksIndexed": 1,
-  "blocksUnique": 1,
-  "blocksUndecodeable": 0
+  "uniqueCids": 1,
+  "undecodeable": 0
 }
 ```
 
