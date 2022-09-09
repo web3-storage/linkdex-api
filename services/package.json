@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "ava",
+    "test": "ava --verbose --timeout=60s",
     "test:debug": "DEBUG=testcontainers* ava"
   },
   "dependencies": {
