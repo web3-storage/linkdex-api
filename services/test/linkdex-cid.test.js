@@ -25,6 +25,14 @@ test('groupByPrefixSortByObjectCount', async t => {
   ], 'should be grouped by uid and ordered by size')
 })
 
+test('unknown CID', async t => {
+  const { s3 } = t.context
+  const bucket = await createBucket(s3)
+  const cid = 'bafkreiefitw5jtbs6zqpapjcrrl5yzdass2su6dzr6ljbuhlczpry4iyi4'
+  const res = await getLinkdexReportForCid(cid, bucket, s3)
+  t.is(res.statusCode, 404, res.body)
+})
+
 test('complete CAR', async t => {
   const { s3 } = t.context
   const bucket = await createBucket(s3)

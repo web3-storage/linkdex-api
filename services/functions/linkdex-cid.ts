@@ -18,7 +18,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 }
 
 /**
- * Try and find a set oF CARs that contain a complete DAG for a given CID.
+ * Try and find a set of CARs that contain a complete DAG for a given CID.
  * For dotStorage CARs are grouped by userid with keys like `raw/<cid>/<userid>/<hash>.car`.
  * We find all the CARs for a given cid by prefix, group them by userid, 
  * and then sort by count of CARs, under the assumptions that the upload with the most CARs
@@ -33,6 +33,9 @@ export async function getLinkdexReportForCid (cid: string, bucket: string, s3: S
   }
   const prefix = `raw/${cid}/`
   const carObjects = await listCars(prefix, bucket, s3)
+  if (carObjects.length === 0) {
+    return response({ error: { details: 'cid not found' }}, { statusCode: 404 })
+  }
   const carGroups = groupByPrefixSortByObjectCount(carObjects)
   const indexes: LinkIndexer[] = []
   for (const carKeys of carGroups) {
