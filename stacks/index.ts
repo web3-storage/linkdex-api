@@ -16,6 +16,6 @@ export default function (app: App) {
   // see: https://docs.sst.dev/advanced/tagging-resources
   Tags.of(app).add('Project', 'linkdex-api')
   Tags.of(app).add('Repository', 'https://github.com/web3-storage/linkdex-api')
-  Tags.of(app).add("Environment", `${app.stage}-${app.region}`)
+  Tags.of(app).add("Environment", `${app.stage}`)
   Tags.of(app).add('ManagedBy', 'SST')
 }
