@@ -18,7 +18,7 @@ export function LinkdexStack({ app, stack }: StackContext) {
         permissions: [bucket],
         environment: { BUCKET_NAME: bucket.bucketName },
         architecture: 'arm_64', // cheaper, so why not?
-        timeout: 0 // default is 10s
+        timeout: '15 minutes' // default is 10s
       }
     },
     routes: {
