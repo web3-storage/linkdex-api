@@ -1,43 +1,16 @@
 import test from 'ava'
 import * as pb from '@ipld/dag-pb'
-import { customAlphabet } from 'nanoid'
 import { encode } from 'multiformats/block'
 import { identity } from 'multiformats/hashes/identity'
 import { CarBufferWriter } from '@ipld/car'
-import { GenericContainer } from 'testcontainers'
 import { sha256 as hasher } from 'multiformats/hashes/sha2'
-import { S3Client, CreateBucketCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import { PutObjectCommand } from '@aws-sdk/client-s3'
+import { createS3, createBucket } from './_s3.js'
 import { getLinkdexReport } from '../functions/linkdex.js'
 
 test.before(async t => {
   t.context.s3 = await createS3()
 })
-
-test('ignores non CAR files', async t => {
-  const { s3 } = t.context
-  const bucket = await createBucket(s3)
-  const block1 = await encode({ value: pb.prepare({ Data: 'one' }), codec: pb, hasher })
-  const block2 = await encode({ value: pb.prepare({ Data: 'two' }), codec: pb, hasher })
-  const parent = await encode({ value: pb.prepare({ Links: [block1.cid, block2.cid] }), codec: pb, hasher })
-  const car = CarBufferWriter.createWriter(Buffer.alloc(1000), { roots: [parent.cid]})
-  car.write(parent)
-  car.write(block1)
-  car.write(block2)
-  const key = `raw/${parent.cid.toString()}/user/complete.car`
-  await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: car.close() }))
-  await s3.send(new PutObjectCommand({ Bucket: bucket, Key: `${key}.idx`, Body: 'i am an index' }))
-  const res = await getLinkdexReport(key, bucket, s3)
-  t.is(res.statusCode, 200)
-  const report = JSON.parse(res.body)
-  t.deepEqual(report, {
-    cars: [ key ],
-    structure: 'Complete',
-    blocksIndexed: 3,
-    uniqueCids: 3,
-    undecodeable: 0
-  })
-})
-
 
 test('complete CAR', async t => {
   const { s3 } = t.context
@@ -51,6 +24,8 @@ test('complete CAR', async t => {
   car.write(block2)
   const key = `raw/${parent.cid.toString()}/user/complete.car`
   await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: car.close() }))
+  // should ignore non-car files
+  await s3.send(new PutObjectCommand({ Bucket: bucket, Key: `${key}.idx`, Body: 'i am an index' }))
   const res = await getLinkdexReport(key, bucket, s3)
   t.is(res.statusCode, 200)
   const report = JSON.parse(res.body)
@@ -164,26 +139,3 @@ test('incomplete across 2 CARs', async t => {
     undecodeable: 0
   })
 })
-
-async function createS3 (){
-  const minio = await new GenericContainer('quay.io/minio/minio')
-    .withCmd(['server', '/data'])
-    .withExposedPorts(9000).start()
-  const s3 = new S3Client({
-    endpoint: `http://${minio.getHost()}:${minio.getMappedPort(9000)}`,
-    forcePathStyle: true,
-    region: 'us-east-1',
-    credentials: {
-      accessKeyId: 'minioadmin',
-      secretAccessKey: 'minioadmin'
-    }
-  })
-  return s3
-}
-
-async function createBucket (s3) {
-  const id = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10)
-  const Bucket = id()
-  await s3.send(new CreateBucketCommand({ Bucket }))
-  return Bucket
-}

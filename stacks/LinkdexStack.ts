@@ -23,6 +23,7 @@ export function LinkdexStack({ app, stack }: StackContext) {
     },
     routes: {
       "GET /": "functions/linkdex.handler",
+      "GET /cid/{cid}": "functions/linkdex-cid.handler",
     }
   })
 
