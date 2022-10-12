@@ -79,6 +79,9 @@ see: https://sst.dev/chapters/configure-the-aws-cli.html
 
 When deploying `linkdex-api` the following "outputs" are reported
 
-- `LambdaUrl` – for direct http invocation of the lambda. Use me to get the full 15min invocation run time.
-- `CustomDomain` – human friendly alias for the ApiEnpoint. Limited to 30s max response time.
-- `ApiEndpoint` – generated api gateway url. Useful for debugging the other two.
+- `CustomDomain` – Human friendly alias for the ApiEnpoint. Limited to 30s max response time.
+- `ApiEndpoint` – Generated api gateway url. Useful for debugging other access routes.
+
+When configuring prod, get the Function URL from the aws console for the prod worker.
+- find the prod worker lambda name in the seed.run dashboard
+- in the aws console, go to the lambda page, look up the lambda by name, in the prod region. The Function URL is listed in the overview.

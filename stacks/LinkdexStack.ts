@@ -28,7 +28,6 @@ export function LinkdexStack({ app, stack }: StackContext) {
   })
 
   stack.addOutputs({
-    LambdaUrl: lindexKeyFn.url ?? '',
     ApiEndpoint: api.url,
     CustomDomain: customDomain ? `https://${customDomain.domainName}` : 'Set HOSTED_ZONE in env to deploy to a custom domain'
   })
