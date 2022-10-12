@@ -73,3 +73,12 @@ curl -sS 'https://???.execute-api.us-east-2.amazonaws.com?key=raw/bafkreia223gzz
 ```
 
 see: https://sst.dev/chapters/configure-the-aws-cli.html
+
+
+## Outputs
+
+When deploying `linkdex-api` the following "outputs" are reported
+
+- `LambdaUrl` – for direct http invocation of the lambda. Use me to get the full 15min invocation run time.
+- `CustomDomain` – human friendly alias for the ApiEnpoint. Limited to 30s max response time.
+- `ApiEndpoint` – generated api gateway url. Useful for debugging the other two.
