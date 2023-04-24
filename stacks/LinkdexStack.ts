@@ -11,19 +11,28 @@ export function LinkdexStack({ app, stack }: StackContext) {
 
   const customDomain = getCustomDomain(app.stage, process.env.HOSTED_ZONE)
 
-  const lindexKeyFn = new Function(stack, 'LindexKeyFn', {
-    handler: 'functions/linkdex.handler',
-    permissions: [bucket],
-    environment: { BUCKET_NAME: bucket.bucketName },
-    architecture: 'arm_64', // cheaper, so why not?
-    timeout: '15 minutes',  // default is 10s. Api gateway has 30s limit. Lambda max 15 mins.
-    url: true
-  })
-  
-  const api = new Api(stack, "api", {
+  const api = new Api(stack, 'api', {
     customDomain,
     routes: {
-      "GET /": lindexKeyFn
+      "GET /": {
+        function: {
+          handler: 'functions/linkdex.handler'
+        }
+      },
+      "GET /cid/{cid}": {
+        function: {
+          handler: 'functions/linkdex-cid.handler'
+        }
+      }
+    },
+    defaults: {
+      function: {
+        permissions: [bucket],
+        environment: { BUCKET_NAME: bucket.bucketName },
+        architecture: 'arm_64', // cheaper, so why not?
+        timeout: '15 minutes',  // default is 10s. Api gateway has 30s limit. Lambda max 15 mins.
+        url: true
+      }
     }
   })
 
