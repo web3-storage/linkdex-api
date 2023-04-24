@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandlerV2, APIGatewayProxyStructuredResultV2 } from "aws-lambda"
 import { S3Client, _Object } from "@aws-sdk/client-s3"
 import { CID } from 'multiformats/cid'
-import { DagStructure, LinkIndexer } from 'linkdex'
+import { Report as LDReport, LinkIndexer } from 'linkdex'
 import pMap from 'p-map'
 import { listCars, indexCar } from './lib/s3.js'
 import { response } from './lib/api.js'
@@ -11,17 +11,9 @@ export interface Reporter {
   report (cid: CID): Promise<Report>
 }
 
-export interface Report {
+export interface Report extends LDReport {
   /** Bucket+key of CAR files where the DAG may be found. */
   cars: string[]
-  /** The structural completeness of the DAG within the specified CARs. */
-  structure: DagStructure
-  /** How many blocks were indexed. */
-  blocksIndexed: number
-  /** How many unique CIDs were seen. */
-  uniqueCids: number
-  /** How many blocks/CIDs failed to decode. */
-  undecodeable: number
 }
 
 const nullReport: Report = { cars: [], structure: 'Unknown', blocksIndexed: 0, uniqueCids: 0, undecodeable: 0 }
