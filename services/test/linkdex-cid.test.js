@@ -1,12 +1,13 @@
-import test from 'ava'
+import anyTest from 'ava'
 import * as pb from '@ipld/dag-pb'
 import { encode } from 'multiformats/block'
-import { identity } from 'multiformats/hashes/identity'
 import { CarBufferWriter } from '@ipld/car'
 import { sha256 as hasher } from 'multiformats/hashes/sha2'
-import { PutObjectCommand } from '@aws-sdk/client-s3'
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { createS3, createBucket } from './_s3.js'
-import { getLinkdexReportForCid, groupByPrefixSortByObjectCount } from '../functions/linkdex-cid.js'
+import { CompleteReporter, RawReporter, getLinkdexReportForCid, groupByPrefixSortByObjectCount } from '../functions/linkdex-cid.js'
+
+const test = /** @type {import('ava').TestFn<{ s3: S3Client }>} */ (anyTest)
 
 test.before(async t => {
   t.context.s3 = await createS3()
@@ -29,8 +30,16 @@ test('unknown CID', async t => {
   const { s3 } = t.context
   const bucket = await createBucket(s3)
   const cid = 'bafkreiefitw5jtbs6zqpapjcrrl5yzdass2su6dzr6ljbuhlczpry4iyi4'
-  const res = await getLinkdexReportForCid(cid, bucket, s3)
-  t.is(res.statusCode, 404, res.body)
+  const reporters = [new RawReporter(bucket, s3)]
+  const res = await getLinkdexReportForCid(cid, reporters)
+  const report = JSON.parse(res.body || '{}')
+  t.deepEqual(report, {
+    cars: [],
+    structure: 'Unknown',
+    blocksIndexed: 0,
+    uniqueCids: 0,
+    undecodeable: 0
+  })
 })
 
 test('complete CAR', async t => {
@@ -47,11 +56,41 @@ test('complete CAR', async t => {
   await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: car.close() }))
   // should ignore non-car files
   await s3.send(new PutObjectCommand({ Bucket: bucket, Key: `${key}.idx`, Body: 'i am an index' }))
-  const res = await getLinkdexReportForCid(parent.cid.toString(), bucket, s3)
+  const reporters = [new RawReporter(bucket, s3)]
+  const res = await getLinkdexReportForCid(parent.cid.toString(), reporters)
   t.is(res.statusCode, 200, res.body)
-  const report = JSON.parse(res.body)
+  const report = JSON.parse(res.body || '{}')
   t.deepEqual(report, {
-    structure: 'Complete'
+    cars: [`${bucket}/raw/${parent.cid}/user/complete.car`],
+    structure: 'Complete',
+    blocksIndexed: 3,
+    uniqueCids: 3,
+    undecodeable: 0
+  })
+})
+
+test('complete CAR from complete dir', async t => {
+  const { s3 } = t.context
+  const bucket = await createBucket(s3)
+  const block1 = await encode({ value: pb.prepare({ Data: '1' }), codec: pb, hasher })
+  const block2 = await encode({ value: pb.prepare({ Data: '2' }), codec: pb, hasher })
+  const parent = await encode({ value: pb.prepare({ Links: [block1.cid, block2.cid] }), codec: pb, hasher })
+  const car = CarBufferWriter.createWriter(Buffer.alloc(1000), { roots: [parent.cid]})
+  car.write(parent)
+  car.write(block1)
+  car.write(block2)
+  const key = `complete/${parent.cid}.car`
+  await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: car.close() }))
+  const reporters = [new CompleteReporter(bucket, s3)]
+  const res = await getLinkdexReportForCid(parent.cid.toString(), reporters)
+  t.is(res.statusCode, 200, res.body)
+  const report = JSON.parse(res.body || '{}')
+  t.deepEqual(report, {
+    cars: [`${bucket}/complete/${parent.cid}.car`],
+    structure: 'Complete',
+    blocksIndexed: 3,
+    uniqueCids: 3,
+    undecodeable: 0
   })
 })
 
@@ -83,10 +122,20 @@ test('complete if any user has complete DAG', async t => {
   await s3.send(new PutObjectCommand({ Bucket: bucket, Key: `raw/${parent.cid.toString()}/user2/part1.car`, Body: car1Bytes }))
   await s3.send(new PutObjectCommand({ Bucket: bucket, Key: `raw/${parent.cid.toString()}/user2/part2.car`, Body: car2Bytes }))
 
-  const res = await getLinkdexReportForCid(parent.cid.toString(), bucket, s3)
+  const reporters = [new RawReporter(bucket, s3)]
+  const res = await getLinkdexReportForCid(parent.cid.toString(), reporters)
   t.is(res.statusCode, 200)
-  const report = JSON.parse(res.body)
-  t.deepEqual(report, { structure: 'Complete' })
+  const report = JSON.parse(res.body || '{}')
+  t.deepEqual(report, {
+    cars: [
+      `${bucket}/raw/${parent.cid}/user2/part1.car`,
+      `${bucket}/raw/${parent.cid}/user2/part2.car`
+    ],
+    structure: 'Complete',
+    blocksIndexed: 4,
+    uniqueCids: 3,
+    undecodeable: 0
+  })
 })
 
 test('partial if no user has complete dag', async t => {
@@ -116,9 +165,16 @@ test('partial if no user has complete dag', async t => {
   // user2 has only partial CAR
   await s3.send(new PutObjectCommand({ Bucket: bucket, Key: `raw/${parent.cid.toString()}/user2/part2.car`, Body: car2Bytes }))
 
-  const res = await getLinkdexReportForCid(parent.cid.toString(), bucket, s3)
+  const reporters = [new RawReporter(bucket, s3)]
+  const res = await getLinkdexReportForCid(parent.cid.toString(), reporters)
   t.is(res.statusCode, 200)
-  const report = JSON.parse(res.body)
-  t.deepEqual(report, { structure: 'Partial' })
+  const report = JSON.parse(res.body || '{}')
+  t.deepEqual(report, {
+    cars: [`${bucket}/raw/${parent.cid}/user1/part1.car`],
+    structure: 'Partial',
+    blocksIndexed: 2,
+    uniqueCids: 2,
+    undecodeable: 0
+  })
 })
   
