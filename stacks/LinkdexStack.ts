@@ -1,4 +1,4 @@
-import { StackContext, Api, Bucket } from "@serverless-stack/resources"
+import { StackContext, Api, Bucket, Function } from "@serverless-stack/resources"
 import { aws_s3 as s3 } from 'aws-cdk-lib'
 
 export function LinkdexStack({ app, stack }: StackContext) {
@@ -10,20 +10,29 @@ export function LinkdexStack({ app, stack }: StackContext) {
     : new Bucket(stack, 'cars')
 
   const customDomain = getCustomDomain(app.stage, process.env.HOSTED_ZONE)
-  
-  const api = new Api(stack, "api", {
+
+  const lindexKeyFn = new Function(stack, 'LindexKeyFn', {
+    handler: 'functions/linkdex.handler'
+  })
+
+  const lindexCidFn = new Function(stack, 'LindexCidFn', {
+    handler: 'functions/linkdex-cid.handler'
+  })
+
+  const api = new Api(stack, 'api', {
     customDomain,
+    routes: {
+      "GET /": lindexKeyFn,
+      "GET /cid/{cid}": lindexCidFn
+    },
     defaults: {
       function: {
         permissions: [bucket],
         environment: { BUCKET_NAME: bucket.bucketName },
         architecture: 'arm_64', // cheaper, so why not?
-        timeout: 0 // default is 10s
+        timeout: '15 minutes',  // default is 10s. Api gateway has 30s limit. Lambda max 15 mins.
+        url: true
       }
-    },
-    routes: {
-      "GET /": "functions/linkdex.handler",
-      "GET /cid/{cid}": "functions/linkdex-cid.handler",
     }
   })
 

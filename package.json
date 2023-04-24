@@ -13,11 +13,11 @@
     "test": "npm test -w services"
   },
   "devDependencies": {
-    "@serverless-stack/cli": "^1.10.1",
-    "@serverless-stack/resources": "^1.10.1",
+    "@serverless-stack/cli": "^1.15.11",
+    "@serverless-stack/resources": "^1.15.11",
     "@tsconfig/node16": "^1.0.3",
     "ava": "^4.3.3",
-    "aws-cdk-lib": "2.32.0",
+    "aws-cdk-lib": "2.39.1",
     "nanoid": "^4.0.0",
     "testcontainers": "^8.13.0",
     "ts-node": "^10.9.1",

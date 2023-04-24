@@ -73,3 +73,15 @@ curl -sS 'https://???.execute-api.us-east-2.amazonaws.com?key=raw/bafkreia223gzz
 ```
 
 see: https://sst.dev/chapters/configure-the-aws-cli.html
+
+
+## Outputs
+
+When deploying `linkdex-api` the following "outputs" are reported
+
+- `CustomDomain` – Human friendly alias for the ApiEnpoint. Limited to 30s max response time.
+- `ApiEndpoint` – Generated api gateway url. Useful for debugging other access routes.
+
+When configuring prod, get the Function URL from the aws console for the prod worker.
+- find the prod worker lambda name in the seed.run dashboard
+- in the aws console, go to the lambda page, look up the lambda by name, in the prod region. The Function URL is listed in the overview.
