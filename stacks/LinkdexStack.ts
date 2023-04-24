@@ -11,19 +11,19 @@ export function LinkdexStack({ app, stack }: StackContext) {
 
   const customDomain = getCustomDomain(app.stage, process.env.HOSTED_ZONE)
 
-  const lindexKeyFn = new Function(stack, 'LindexKeyFn', {
-    handler: 'functions/linkdex.handler'
-  })
-
-  const lindexCidFn = new Function(stack, 'LindexCidFn', {
-    handler: 'functions/linkdex-cid.handler'
-  })
-
   const api = new Api(stack, 'api', {
     customDomain,
     routes: {
-      "GET /": lindexKeyFn,
-      "GET /cid/{cid}": lindexCidFn
+      "GET /": {
+        function: {
+          handler: 'functions/linkdex.handler'
+        }
+      },
+      "GET /cid/{cid}": {
+        function: {
+          handler: 'functions/linkdex-cid.handler'
+        }
+      }
     },
     defaults: {
       function: {
