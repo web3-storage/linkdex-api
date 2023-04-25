@@ -19,7 +19,7 @@ export interface Report extends LDReport {
 const nullReport: Report = { cars: [], structure: 'Unknown', blocksIndexed: 0, uniqueCids: 0, undecodeable: 0 }
 
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
-  const cid = event.pathParameters?.cid ?? ''
+  const cid = event.rawPath.split('/cid/')[1]
   const bucket = process.env.BUCKET_NAME ?? ''
   const s3 = new S3Client({})
   const reporters = [new CompleteReporter(bucket, s3), new RawReporter(bucket, s3)]
