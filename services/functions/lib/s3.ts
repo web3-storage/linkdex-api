@@ -1,13 +1,17 @@
 import { S3Client, GetObjectCommand, HeadObjectCommand, paginateListObjectsV2, _Object } from "@aws-sdk/client-s3"
 import { CarBlockIterator } from '@ipld/car'
 import { LinkIndexer } from 'linkdex'
+import { HashingLinkIndexer } from 'linkdex/hashing-indexer'
 import pRetry from 'p-retry'
 
-export async function indexCar (bucket: string, s3: S3Client, index: LinkIndexer, carKey: string) {
+export async function indexCar (bucket: string, s3: S3Client, index: LinkIndexer | HashingLinkIndexer, carKey: string) {
   const carStream = await getObjectStream(carKey, bucket, s3)
   const carBlocks = await CarBlockIterator.fromIterable(carStream)
   for await (const block of carBlocks) {
-    index.decodeAndIndex(block)
+    const result = index.decodeAndIndex(block)
+    if (result instanceof Promise) {
+      await result
+    }
   }
 }
 

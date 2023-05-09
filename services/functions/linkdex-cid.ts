@@ -2,6 +2,7 @@ import { APIGatewayProxyHandlerV2, APIGatewayProxyStructuredResultV2 } from "aws
 import { S3Client, _Object } from "@aws-sdk/client-s3"
 import { CID } from 'multiformats/cid'
 import { Report as LDReport, LinkIndexer } from 'linkdex'
+import { HashingLinkIndexer } from 'linkdex/hashing-indexer.js'
 import pMap from 'p-map'
 import { listCars, indexCar } from './lib/s3.js'
 import { response } from './lib/api.js'
@@ -16,13 +17,19 @@ export interface Report extends LDReport {
   cars: string[]
 }
 
+export interface ReporterOptions {
+  /** Hash blocks while indexing to verify block bytes match the CID. */
+  hash?: boolean
+}
+
 const nullReport: Report = { cars: [], structure: 'Unknown', blocksIndexed: 0, uniqueCids: 0, undecodeable: 0 }
 
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   const cid = event.rawPath.split('/cid/')[1]
+  const hash = event.rawQueryString.includes('hash=true')
   const bucket = process.env.BUCKET_NAME ?? ''
   const s3 = new S3Client({})
-  const reporters = [new CompleteReporter(bucket, s3), new RawReporter(bucket, s3)]
+  const reporters = [new CompleteReporter(bucket, s3, { hash }), new RawReporter(bucket, s3, { hash })]
   try {
     return await getLinkdexReportForCid(cid, reporters)
   } catch (err: any) {
@@ -41,7 +48,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
  * is likely to contain the full DAG.
  */
 export class RawReporter implements Reporter {
-  constructor (private bucket: string, private s3: S3Client) {}
+  constructor (private bucket: string, private s3: S3Client, private options: ReporterOptions = {}) {}
 
   async report (cid: CID): Promise<Report> {
     const prefix = `raw/${cid}/`
@@ -55,7 +62,7 @@ export class RawReporter implements Reporter {
       // create a per user id prefix index. 
       // avoid using a shared indexer across all here. 
       // if any user uploaded a CAR with extraneous blocks with links a global index would always return 'Partial'
-      const index = new LinkIndexer()
+      const index = this.options.hash ? new HashingLinkIndexer() : new LinkIndexer()
       const indexer = indexCar.bind(null, this.bucket, this.s3, index)
       await pMap(carKeys, indexer, { concurrency: 10 })
       const cars = carKeys.map(k => `${this.bucket}/${k}`)
@@ -63,7 +70,7 @@ export class RawReporter implements Reporter {
         // return as soon as we find a set of CARs that has a complete DAG
         return { cars, ...index.report(), structure: 'Complete' }
       }
-      reports.push({ cars, ...index.report(), structure: index.getDagStructureLabel() })
+      reports.push({ cars, ...index.report() })
     }
     return reports.find(r => r.structure === 'Partial') ?? reports.find(r => r.structure === 'Unknown') ?? nullReport
   }
@@ -80,13 +87,13 @@ export class RawReporter implements Reporter {
  * run linkdex over them anyway to verify.
  */
 export class CompleteReporter implements Reporter {
-  constructor (private bucket: string, private s3: S3Client) {}
+  constructor (private bucket: string, private s3: S3Client, private options: ReporterOptions = {}) {}
 
   async report (cid: CID): Promise<Report> {
     const key = `complete/${cid.toV1()}.car`
-    const index = new LinkIndexer()
+    const index = this.options.hash ? new HashingLinkIndexer() : new LinkIndexer()
     await indexCar(this.bucket, this.s3, index, key)
-    return { cars: [`${this.bucket}/${key}`], ...index.report(), structure: index.getDagStructureLabel() }
+    return { cars: [`${this.bucket}/${key}`], ...index.report() }
   }
 }
 
