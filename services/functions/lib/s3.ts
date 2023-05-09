@@ -6,6 +6,7 @@ import pRetry from 'p-retry'
 
 export async function indexCar (bucket: string, s3: S3Client, index: LinkIndexer | HashingLinkIndexer, carKey: string) {
   const carStream = await getObjectStream(carKey, bucket, s3)
+  // @ts-expect-error In lambda, stream is iterable
   const carBlocks = await CarBlockIterator.fromIterable(carStream)
   for await (const block of carBlocks) {
     const result = index.decodeAndIndex(block)

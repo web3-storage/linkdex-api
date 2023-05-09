@@ -1,5 +1,0 @@
-{
-  "name": "linkdex-api",
-  "region": "us-east-2",
-  "main": "stacks/index.ts"
-}

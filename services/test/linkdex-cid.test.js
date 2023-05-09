@@ -13,7 +13,7 @@ test.before(async t => {
   t.context.s3 = await createS3()
 })
 
-test('groupByPrefixSortByObjectCount', async t => {
+test('groupByPrefixSortByObjectCount', t => {
   const input = [
     { Key: 'raw/cid1/uid1/1.car' },
     { Key: 'raw/cid1/uid2/2.car' },
@@ -177,4 +177,3 @@ test('partial if no user has complete dag', async t => {
     undecodeable: 0
   })
 })
-  

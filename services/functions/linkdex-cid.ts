@@ -1,4 +1,4 @@
-import { APIGatewayProxyHandlerV2, APIGatewayProxyStructuredResultV2 } from "aws-lambda"
+import { APIGatewayProxyHandlerV2 } from "aws-lambda"
 import { S3Client, _Object } from "@aws-sdk/client-s3"
 import { CID } from 'multiformats/cid'
 import { Report as LDReport, LinkIndexer } from 'linkdex'

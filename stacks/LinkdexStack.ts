@@ -1,4 +1,4 @@
-import { StackContext, Api, Bucket, Function } from "@serverless-stack/resources"
+import { StackContext, Api, Bucket } from "sst/constructs"
 import { aws_s3 as s3 } from 'aws-cdk-lib'
 
 export function LinkdexStack({ app, stack }: StackContext) {
@@ -16,12 +16,12 @@ export function LinkdexStack({ app, stack }: StackContext) {
     routes: {
       "GET /": {
         function: {
-          handler: 'functions/linkdex.handler'
+          handler: 'services/functions/linkdex.handler'
         }
       },
       "GET /cid/{cid}": {
         function: {
-          handler: 'functions/linkdex-cid.handler'
+          handler: 'services/functions/linkdex-cid.handler'
         }
       }
     },

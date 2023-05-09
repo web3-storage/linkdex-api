@@ -1,15 +1,16 @@
 import { S3Client, CreateBucketCommand } from '@aws-sdk/client-s3'
-import { GenericContainer } from 'testcontainers'
+import { GenericContainer, Wait } from 'testcontainers'
 import { customAlphabet } from 'nanoid'
 
-export async function createS3 (){
+export async function createS3 () {
   const minio = await new GenericContainer('quay.io/minio/minio')
-    .withCmd(['server', '/data'])
+    .withCommand(['server', '/data'])
     .withExposedPorts(9000)
+    .withWaitStrategy(Wait.forLogMessage(/1 Online/, 1))
     .withReuse()
     .start()
   const s3 = new S3Client({
-    endpoint: `http://${minio.getHost()}:${minio.getMappedPort(9000)}`,
+    endpoint: `http://127.0.0.1:${minio.getMappedPort(9000)}`,
     forcePathStyle: true,
     region: 'us-east-1',
     credentials: {
