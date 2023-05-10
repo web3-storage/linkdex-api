@@ -10,7 +10,10 @@ export default {
     }
   },
   stacks (app) {
-    app.setDefaultFunctionProps({ runtime: "nodejs18.x" })
+    app.setDefaultFunctionProps({
+      runtime: 'nodejs18.x',
+      nodejs: { sourcemap: true }
+    })
     app.stack(LinkdexStack)
 
     // tags let us discover all the aws resource costs incurred by this app
