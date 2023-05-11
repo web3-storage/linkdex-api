@@ -29,8 +29,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   const hash = event.rawQueryString.includes('hash=true')
   const bucket = process.env.BUCKET_NAME ?? ''
   const s3 = new S3Client({})
-  const index = this.options.hash ? new HashingLinkIndexer() : new LinkIndexer()
-  const reporters = [new CompleteReporter(bucket, s3, index), new RawReporter(bucket, s3, index)]
+  const reporters = [new CompleteReporter(bucket, s3, { hash }), new RawReporter(bucket, s3, { hash })]
   try {
     return await getLinkdexReportForCid(cid, reporters)
   } catch (err: any) {
